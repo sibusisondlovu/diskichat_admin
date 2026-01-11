@@ -1,5 +1,5 @@
 import { Outlet, Link, useLocation, useNavigate } from "react-router-dom";
-import { FaFutbol, FaUsers, FaChartLine, FaSignOutAlt, FaBell } from "react-icons/fa";
+import { FaFutbol, FaUsers, FaChartLine, FaSignOutAlt, FaBell, FaTrophy } from "react-icons/fa";
 import { signOut } from "firebase/auth";
 import { auth } from "../firebase";
 
@@ -13,61 +13,87 @@ export default function DashboardLayout() {
     };
 
     const navItems = [
-        { name: "Live Matches", path: "/", icon: <FaFutbol /> }, // Matches & Match of Day
+        { name: "Live Matches", path: "/", icon: <FaFutbol /> },
+        { name: "Competitions", icon: <FaTrophy />, path: "/competitions" },
         { name: "Users", path: "/users", icon: <FaUsers /> },
         { name: "Push Notifications", path: "/notifications", icon: <FaBell /> },
         { name: "Analytics", path: "/analytics", icon: <FaChartLine /> },
     ];
 
     return (
-        <div className="flex h-screen bg-gray-100 text-gray-800 font-sans">
+        <div className="flex h-screen bg-slate-900 text-gray-100 font-sans overflow-hidden">
             {/* Sidebar */}
-            <aside className="w-64 bg-primary text-white flex flex-col">
-                <div className="p-6 text-2xl font-bold tracking-tight border-b border-gray-700 flex items-center gap-2">
-                    <span className="text-accent">Diski</span>Chat
+            <aside className="w-72 bg-slate-950 border-r border-slate-800 flex flex-col relative z-20">
+                <div className="p-8 pb-4">
+                    <h1 className="text-2xl font-black text-white tracking-tight flex items-center gap-2">
+                        <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center text-white text-lg">
+                            <FaFutbol />
+                        </div>
+                        <span><span className="text-blue-500">Diski</span>Chat</span>
+                    </h1>
+                    <p className="text-xs text-slate-500 font-semibold mt-2 uppercase tracking-wider ml-1">Admin Console</p>
                 </div>
 
-                <nav className="flex-1 p-4 space-y-2">
+                <nav className="flex-1 px-4 py-6 space-y-1">
                     {navItems.map((item) => (
                         <Link
                             key={item.path}
                             to={item.path}
-                            className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-colors ${location.pathname === item.path
-                                    ? "bg-accent text-white"
-                                    : "hover:bg-gray-800 text-gray-300"
+                            className={`flex items-center gap-3 px-4 py-3.5 rounded-xl transition-all duration-200 group ${location.pathname === item.path
+                                    ? "bg-blue-600 text-white shadow-lg shadow-blue-900/20"
+                                    : "text-slate-400 hover:bg-slate-900 hover:text-white"
                                 }`}
                         >
-                            <span className="text-lg">{item.icon}</span>
+                            <span className={`text-xl ${location.pathname === item.path ? 'text-white' : 'text-slate-500 group-hover:text-blue-400'}`}>{item.icon}</span>
                             <span className="font-medium">{item.name}</span>
                         </Link>
                     ))}
                 </nav>
 
-                <div className="p-4 border-t border-gray-700">
+                <div className="p-4 border-t border-slate-800">
                     <button
                         onClick={handleLogout}
-                        className="flex items-center gap-3 px-4 py-3 w-full rounded-lg hover:bg-red-600/80 text-gray-300 hover:text-white transition-all"
+                        className="flex items-center gap-3 px-4 py-3 w-full rounded-xl hover:bg-red-500/10 text-slate-400 hover:text-red-400 transition-all font-medium"
                     >
                         <FaSignOutAlt />
-                        <span>Logout</span>
+                        <span>Sign Out</span>
                     </button>
                 </div>
             </aside>
 
             {/* Main Content */}
-            <main className="flex-1 overflow-y-auto">
-                <header className="bg-white shadow-sm p-4 flex justify-between items-center sticky top-0 z-10">
-                    <h1 className="text-xl font-bold text-gray-700">
-                        {navItems.find((i) => i.path === location.pathname)?.name || "Dashboard"}
-                    </h1>
+            <main className="flex-1 overflow-hidden relative flex flex-col">
+                {/* Top Header */}
+                <header className="h-20 bg-slate-900/50 backdrop-blur-md border-b border-slate-800 flex justify-between items-center px-8 z-10">
+                    <div>
+                        <h2 className="text-xl font-bold text-white capitalize">
+                            {navItems.find((i) => i.path === location.pathname)?.name || "Dashboard"}
+                        </h2>
+                    </div>
                     <div className="flex items-center gap-4">
-                        <div className="text-sm text-gray-500">Admin</div>
-                        <div className="w-8 h-8 rounded-full bg-gray-300"></div>
+                        <button className="w-10 h-10 rounded-full bg-slate-800 text-slate-400 flex items-center justify-center hover:bg-slate-700 hover:text-white transition">
+                            <FaBell />
+                        </button>
+                        <div className="flex items-center gap-3 pl-4 border-l border-slate-800">
+                            <div className="text-right hidden md:block">
+                                <div className="text-sm font-semibold text-white">Administrator</div>
+                                <div className="text-xs text-slate-500">Super User</div>
+                            </div>
+                            <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 border-2 border-slate-900 shadow-sm"></div>
+                        </div>
                     </div>
                 </header>
 
-                <div className="p-6">
-                    <Outlet />
+                <div className="flex-1 overflow-y-auto p-8 relative">
+                    {/* Background Gradients */}
+                    <div className="absolute top-0 left-0 w-full h-full overflow-hidden pointer-events-none z-0 opacity-20">
+                        <div className="absolute top-[-10%] left-[20%] w-[30%] h-[30%] bg-blue-600/30 rounded-full blur-[120px]"></div>
+                        <div className="absolute bottom-[0%] right-[0%] w-[40%] h-[40%] bg-purple-600/30 rounded-full blur-[120px]"></div>
+                    </div>
+
+                    <div className="relative z-10 max-w-6xl mx-auto">
+                        <Outlet />
+                    </div>
                 </div>
             </main>
         </div>
