@@ -1,10 +1,13 @@
+import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { collection, addDoc, getDocs, updateDoc, deleteDoc, doc, query, orderBy, where, serverTimestamp, Timestamp } from "firebase/firestore";
 import { db } from "../firebase";
-import { FaPlus, FaTrash, FaEdit, FaStar, FaRegStar, FaSatelliteDish, FaSync } from "react-icons/fa";
+import { FaPlus, FaTrash, FaEdit, FaStar, FaRegStar, FaSatelliteDish, FaSync, FaEye } from "react-icons/fa";
 
 // API Base URL removed as we now use direct Firestore/API-Football integration
 
 export default function Matches() {
+    const navigate = useNavigate();
     const [matches, setMatches] = useState([]);
     const [competitions, setCompetitions] = useState([]);
     const [selectedLeagueId, setSelectedLeagueId] = useState("");
@@ -16,6 +19,8 @@ export default function Matches() {
         homeTeamId: null,
         awayTeam: "",
         awayTeamId: null,
+        homeLogo: "", // Added
+        awayLogo: "", // Added
         homeScore: 0,
         awayScore: 0,
         status: "upcoming", // upcoming, live, finished
@@ -23,9 +28,8 @@ export default function Matches() {
         time: "",
         venue: "",
         isMatchOfTheDay: false,
-        isMatchOfTheDay: false,
         competitionId: "",
-        fixtureId: null, // New field for MySQL ID
+        apiMatchId: null, // Critical for App
     });
     const [editingId, setEditingId] = useState(null);
 
@@ -59,6 +63,7 @@ export default function Matches() {
             { id: 61, name: "Ligue 1", country_name: "France" },
             { id: 2, name: "UEFA Champions League", country_name: "World" },
             { id: 3, name: "UEFA Europa League", country_name: "World" },
+            { id: 6, name: "Africa Cup of Nations", country_name: "World" },
         ];
         setCompetitions(defaultCompetitions);
     };
@@ -89,6 +94,15 @@ export default function Matches() {
                     const away = data.response[0].teams.away;
                     const league = data.response[0].league;
 
+                    // Helper to map API status
+                    const mapApiStatus = (shortStatus) => {
+                        if (['1H', '2H', 'HT', 'ET', 'BT', 'P', 'LIVE'].includes(shortStatus)) return 'live';
+                        if (['FT', 'AET', 'PEN'].includes(shortStatus)) return 'finished';
+                        return 'upcoming';
+                    };
+
+                    const status = mapApiStatus(match.status.short);
+
                     // Pre-fill modal with fetched match data
                     const matchDate = new Date(match.date);
                     setFormData({
@@ -96,15 +110,17 @@ export default function Matches() {
                         homeTeamId: home.id,
                         awayTeam: away.name,
                         awayTeamId: away.id,
-                        homeScore: 0,
-                        awayScore: 0,
-                        status: "upcoming",
+                        homeLogo: home.logo, // Store logo
+                        awayLogo: away.logo, // Store logo
+                        homeScore: match.goals.home || 0, // Fetch actual score
+                        awayScore: match.goals.away || 0, // Fetch actual score
+                        status: status,
                         date: matchDate.toISOString().split('T')[0],
                         time: matchDate.toTimeString().split(' ')[0].substring(0, 5),
                         venue: match.venue.name || "",
                         isMatchOfTheDay: false,
                         competitionId: league.id || selectedLeagueId,
-                        fixtureId: match.id, // Store MySQL Fixture ID (useful for referencing)
+                        apiMatchId: match.id, // Store API Match ID for App linking
                     });
 
                     setShowModal(true);
@@ -174,6 +190,8 @@ export default function Matches() {
             homeTeamId: match.homeTeamId || null,
             awayTeam: match.awayTeam,
             awayTeamId: match.awayTeamId || null,
+            homeLogo: match.homeLogo || "",
+            awayLogo: match.awayLogo || "",
             homeScore: match.homeScore,
             awayScore: match.awayScore,
             status: match.status,
@@ -182,7 +200,7 @@ export default function Matches() {
             venue: match.venue,
             isMatchOfTheDay: match.isMatchOfTheDay || false,
             competitionId: match.competitionId || "",
-            fixtureId: match.fixtureId || null,
+            apiMatchId: match.apiMatchId || null,
         });
         setEditingId(match.id);
         setShowModal(true);
@@ -205,6 +223,8 @@ export default function Matches() {
             homeTeamId: null,
             awayTeam: "",
             awayTeamId: null,
+            homeLogo: "",
+            awayLogo: "",
             homeScore: 0,
             awayScore: 0,
             status: "upcoming",
@@ -213,7 +233,7 @@ export default function Matches() {
             venue: "",
             isMatchOfTheDay: false,
             competitionId: "",
-            fixtureId: null,
+            apiMatchId: null,
         });
     };
 
@@ -304,6 +324,7 @@ export default function Matches() {
                                         </button>
                                     </td>
                                     <td className="p-5 text-right space-x-2">
+                                        <button onClick={() => navigate(`/match/${match.id}`)} className="text-slate-400 hover:text-blue-400 p-2 transition" title="View Details"><FaEye /></button>
                                         <button onClick={() => handleEdit(match)} className="text-slate-400 hover:text-blue-400 p-2 transition"><FaEdit /></button>
                                         <button onClick={() => handleDelete(match.id)} className="text-slate-400 hover:text-red-400 p-2 transition"><FaTrash /></button>
                                     </td>

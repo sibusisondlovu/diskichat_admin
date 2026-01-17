@@ -1,9 +1,11 @@
 import { useState, useEffect } from "react";
-import { collection, getDocs, query, orderBy, limit, startAfter } from "firebase/firestore";
+import { Link, useNavigate } from "react-router-dom";
+import { collection, getDocs, query, orderBy, limit, doc, updateDoc } from "firebase/firestore";
 import { db } from "../firebase";
-import { FaSearch, FaUser, FaTrophy, FaStar } from "react-icons/fa";
+import { FaSearch, FaUser, FaStar, FaEye, FaBan, FaUserSlash, FaCheck } from "react-icons/fa";
 
 export default function Users() {
+    const navigate = useNavigate();
     const [users, setUsers] = useState([]);
     const [loading, setLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState("");
@@ -28,17 +30,46 @@ export default function Users() {
 
     const fetchUsers = async () => {
         try {
-            // In a real app with thousands of users, use server-side pagination and Algolia for search
-            // For now, we fetch a limited batch
-            const q = query(collection(db, "users"), orderBy("createdAt", "desc"), limit(100));
+            // Fetch users without orderBy to ensure we get ALL users, including legacy ones without createdAt
+            // In a real app with thousands of users, we would backfill the data, but here client-side sort is fine for <100 users
+            const q = query(collection(db, "users"), limit(100));
             const querySnapshot = await getDocs(q);
             const usersData = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+
+            // Client-side sort: Highest points first
+            usersData.sort((a, b) => {
+                const pointsA = a.points || 0;
+                const pointsB = b.points || 0;
+                return pointsB - pointsA;
+            });
+
             setUsers(usersData);
             setFilteredUsers(usersData);
         } catch (error) {
             console.error("Error fetching users:", error);
         } finally {
             setLoading(false);
+        }
+    };
+
+    const handleStatusUpdate = async (userId, newStatus) => {
+        if (!window.confirm(`Are you sure you want to change this user's status to ${newStatus}?`)) return;
+
+        try {
+            await updateDoc(doc(db, "users", userId), {
+                status: newStatus
+            });
+
+            // Optimistic update
+            const updatedUsers = users.map(u =>
+                u.id === userId ? { ...u, status: newStatus } : u
+            );
+            setUsers(updatedUsers);
+            setFilteredUsers(updatedUsers); // Re-filter if needed, or just update state
+
+        } catch (error) {
+            console.error("Error updating user status:", error);
+            alert("Failed to update status");
         }
     };
 
@@ -71,8 +102,8 @@ export default function Users() {
                                 <th className="p-5">User Profile</th>
                                 <th className="p-5">Team Loyalty</th>
                                 <th className="p-5">Gamification</th>
-                                <th className="p-5">Rank</th>
-                                <th className="p-5">Joined</th>
+                                <th className="p-5">Status</th>
+                                <th className="p-5 text-right">Actions</th>
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-slate-700/50">
@@ -110,15 +141,49 @@ export default function Users() {
                                         </div>
                                     </td>
                                     <td className="p-5">
-                                        <span className={`px-3 py-1 rounded-full text-xs font-bold border ${user.rank === 'admin' ? 'bg-purple-500/10 text-purple-400 border-purple-500/20' :
-                                                user.rank === 'pro' ? 'bg-blue-500/10 text-blue-400 border-blue-500/20' :
-                                                    'bg-slate-700/50 text-slate-400 border-slate-600'
+                                        <span className={`px-3 py-1 rounded-full text-xs font-bold border ${user.status === 'banned' ? 'bg-red-500/10 text-red-400 border-red-500/20' :
+                                            user.status === 'suspended' ? 'bg-orange-500/10 text-orange-400 border-orange-500/20' :
+                                                'bg-green-500/10 text-green-400 border-green-500/20'
                                             }`}>
-                                            {user.rank || 'Amateur'}
+                                            {user.status || 'Active'}
                                         </span>
                                     </td>
-                                    <td className="p-5 text-slate-500 text-sm">
-                                        {user.createdAt?.seconds ? new Date(user.createdAt.seconds * 1000).toLocaleDateString() : '-'}
+                                    <td className="p-5 text-right space-x-2">
+                                        <button
+                                            onClick={() => navigate(`/user/${user.id}`)}
+                                            className="text-slate-400 hover:text-blue-400 p-2 transition"
+                                            title="View Details"
+                                        >
+                                            <FaEye />
+                                        </button>
+
+                                        {user.status !== 'suspended' && user.status !== 'banned' && (
+                                            <button
+                                                onClick={() => handleStatusUpdate(user.id, 'suspended')}
+                                                className="text-slate-400 hover:text-orange-400 p-2 transition"
+                                                title="Suspend User"
+                                            >
+                                                <FaUserSlash />
+                                            </button>
+                                        )}
+
+                                        {user.status !== 'banned' ? (
+                                            <button
+                                                onClick={() => handleStatusUpdate(user.id, 'banned')}
+                                                className="text-slate-400 hover:text-red-400 p-2 transition"
+                                                title="Ban User"
+                                            >
+                                                <FaBan />
+                                            </button>
+                                        ) : (
+                                            <button
+                                                onClick={() => handleStatusUpdate(user.id, 'active')}
+                                                className="text-slate-400 hover:text-green-400 p-2 transition"
+                                                title="Activate User"
+                                            >
+                                                <FaCheck />
+                                            </button>
+                                        )}
                                     </td>
                                 </tr>
                             ))}

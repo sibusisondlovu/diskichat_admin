@@ -3,6 +3,8 @@ import { FaFutbol, FaUsers, FaChartLine, FaSignOutAlt, FaBell, FaTrophy } from "
 import { signOut } from "firebase/auth";
 import { auth } from "../firebase";
 
+import logo from "../assets/diskichat_logo.png";
+
 export default function DashboardLayout() {
     const location = useLocation();
     const navigate = useNavigate();
@@ -25,13 +27,10 @@ export default function DashboardLayout() {
             {/* Sidebar */}
             <aside className="w-72 bg-slate-950 border-r border-slate-800 flex flex-col relative z-20">
                 <div className="p-8 pb-4">
-                    <h1 className="text-2xl font-black text-white tracking-tight flex items-center gap-2">
-                        <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center text-white text-lg">
-                            <FaFutbol />
-                        </div>
-                        <span><span className="text-blue-500">Diski</span>Chat</span>
-                    </h1>
-                    <p className="text-xs text-slate-500 font-semibold mt-2 uppercase tracking-wider ml-1">Admin Console</p>
+                    <div className="flex items-center gap-3 mb-2">
+                        <img src={logo} alt="DiskiChat Logo" className="h-10 w-auto object-contain" />
+                    </div>
+                    <p className="text-xs text-slate-500 font-semibold uppercase tracking-wider ml-1">Admin Console</p>
                 </div>
 
                 <nav className="flex-1 px-4 py-6 space-y-1">
@@ -40,8 +39,8 @@ export default function DashboardLayout() {
                             key={item.path}
                             to={item.path}
                             className={`flex items-center gap-3 px-4 py-3.5 rounded-xl transition-all duration-200 group ${location.pathname === item.path
-                                    ? "bg-blue-600 text-white shadow-lg shadow-blue-900/20"
-                                    : "text-slate-400 hover:bg-slate-900 hover:text-white"
+                                ? "bg-blue-600 text-white shadow-lg shadow-blue-900/20"
+                                : "text-slate-400 hover:bg-slate-900 hover:text-white"
                                 }`}
                         >
                             <span className={`text-xl ${location.pathname === item.path ? 'text-white' : 'text-slate-500 group-hover:text-blue-400'}`}>{item.icon}</span>
