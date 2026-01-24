@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { collection, addDoc, getDocs, updateDoc, deleteDoc, doc, query, orderBy, where, serverTimestamp, Timestamp } from "firebase/firestore";
+import { collection, addDoc, getDocs, updateDoc, deleteDoc, doc, query, orderBy, where, serverTimestamp, Timestamp, setDoc } from "firebase/firestore";
 import { db } from "../firebase";
 import { FaPlus, FaTrash, FaEdit, FaStar, FaRegStar, FaSatelliteDish, FaSync, FaEye } from "react-icons/fa";
 
@@ -9,18 +9,15 @@ import { FaPlus, FaTrash, FaEdit, FaStar, FaRegStar, FaSatelliteDish, FaSync, Fa
 export default function Matches() {
     const navigate = useNavigate();
     const [matches, setMatches] = useState([]);
-    const [competitions, setCompetitions] = useState([]);
-    const [selectedLeagueId, setSelectedLeagueId] = useState("");
     const [loading, setLoading] = useState(true);
-    const [fetchingMatch, setFetchingMatch] = useState(false);
     const [showModal, setShowModal] = useState(false);
     const [formData, setFormData] = useState({
         homeTeam: "",
         homeTeamId: null,
         awayTeam: "",
         awayTeamId: null,
-        homeLogo: "", // Added
-        awayLogo: "", // Added
+        homeLogo: "",
+        awayLogo: "",
         homeScore: 0,
         awayScore: 0,
         status: "upcoming", // upcoming, live, finished
@@ -29,13 +26,12 @@ export default function Matches() {
         venue: "",
         isMatchOfTheDay: false,
         competitionId: "",
-        apiMatchId: null, // Critical for App
+        apiMatchId: null,
     });
     const [editingId, setEditingId] = useState(null);
 
     useEffect(() => {
         fetchMatches();
-        fetchCompetitions();
     }, []);
 
     const fetchMatches = async () => {
@@ -48,94 +44,6 @@ export default function Matches() {
             console.error("Error fetching matches:", error);
         } finally {
             setLoading(false);
-        }
-    };
-
-    const fetchCompetitions = async () => {
-        // Hardcoded competitions since we removed the backend
-        // We can create a config file for this later
-        const defaultCompetitions = [
-            { id: 288, name: "Premier Soccer League", country_name: "South Africa" },
-            { id: 39, name: "Premier League", country_name: "England" },
-            { id: 140, name: "La Liga", country_name: "Spain" },
-            { id: 135, name: "Serie A", country_name: "Italy" },
-            { id: 78, name: "Bundesliga", country_name: "Germany" },
-            { id: 61, name: "Ligue 1", country_name: "France" },
-            { id: 2, name: "UEFA Champions League", country_name: "World" },
-            { id: 3, name: "UEFA Europa League", country_name: "World" },
-            { id: 6, name: "Africa Cup of Nations", country_name: "World" },
-        ];
-        setCompetitions(defaultCompetitions);
-    };
-
-    const fetchNextMatch = async () => {
-        if (!selectedLeagueId) {
-            alert("Please select a competition first.");
-            return;
-        }
-
-        setFetchingMatch(true);
-        try {
-            // Direct call to API-Football
-            const response = await fetch(`https://v3.football.api-sports.io/fixtures?league=${selectedLeagueId}&next=1`, {
-                method: "GET",
-                headers: {
-                    "x-rapidapi-key": "cd675cb5b4ff3bf1e26f67a7e1b68f76",
-                    "x-rapidapi-host": "v3.football.api-sports.io"
-                },
-            });
-
-            if (response.ok) {
-                const data = await response.json();
-
-                if (data.response && data.response.length > 0) {
-                    const match = data.response[0].fixture;
-                    const home = data.response[0].teams.home;
-                    const away = data.response[0].teams.away;
-                    const league = data.response[0].league;
-
-                    // Helper to map API status
-                    const mapApiStatus = (shortStatus) => {
-                        if (['1H', '2H', 'HT', 'ET', 'BT', 'P', 'LIVE'].includes(shortStatus)) return 'live';
-                        if (['FT', 'AET', 'PEN'].includes(shortStatus)) return 'finished';
-                        return 'upcoming';
-                    };
-
-                    const status = mapApiStatus(match.status.short);
-
-                    // Pre-fill modal with fetched match data
-                    const matchDate = new Date(match.date);
-                    setFormData({
-                        homeTeam: home.name,
-                        homeTeamId: home.id,
-                        awayTeam: away.name,
-                        awayTeamId: away.id,
-                        homeLogo: home.logo, // Store logo
-                        awayLogo: away.logo, // Store logo
-                        homeScore: match.goals.home || 0, // Fetch actual score
-                        awayScore: match.goals.away || 0, // Fetch actual score
-                        status: status,
-                        date: matchDate.toISOString().split('T')[0],
-                        time: matchDate.toTimeString().split(' ')[0].substring(0, 5),
-                        venue: match.venue.name || "",
-                        isMatchOfTheDay: false,
-                        competitionId: league.id || selectedLeagueId,
-                        apiMatchId: match.id, // Store API Match ID for App linking
-                    });
-
-                    setShowModal(true);
-                } else {
-                    alert("No upcoming matches found for this competition.");
-                }
-            } else {
-                const error = await response.text();
-                alert(`Error: ${error || "Failed to fetch match from API-Football"}`);
-            }
-        } catch (error) {
-            console.error("Error fetching next match:", error);
-            alert("Failed to connect to API-Football.");
-        } finally {
-            setFetchingMatch(false);
         }
     };
 
@@ -153,15 +61,38 @@ export default function Matches() {
                 updatedAt: serverTimestamp(),
             };
 
+            let docId = editingId;
+
             if (editingId) {
                 await updateDoc(doc(db, "matches", editingId), matchData);
             } else {
-                await addDoc(collection(db, "matches"), {
-                    ...matchData,
-                    createdAt: serverTimestamp(),
-                });
+                if (formData.apiMatchId) {
+                    docId = String(formData.apiMatchId);
+                    // Use setDoc to prevent duplicates and use API ID as key
+                    await setDoc(doc(db, "matches", docId), {
+                        ...matchData,
+                        createdAt: serverTimestamp(),
+                    });
+                } else {
+                    const docRef = await addDoc(collection(db, "matches"), {
+                        ...matchData,
+                        createdAt: serverTimestamp(),
+                    });
+                    docId = docRef.id;
+                }
             }
 
+            // Sync with live_matches collection
+            if (formData.status === 'live') {
+                await setDoc(doc(db, 'live_matches', docId), {
+                    ...matchData,
+                    id: docId, // Ensure ID is part of data
+                    updatedAt: serverTimestamp(),
+                });
+            } else {
+                // If not live, ensure it's removed from live_matches
+                await deleteDoc(doc(db, 'live_matches', docId));
+            }
 
             setShowModal(false);
             setEditingId(null);
@@ -177,6 +108,7 @@ export default function Matches() {
         if (window.confirm("Are you sure you want to delete this match?")) {
             try {
                 await deleteDoc(doc(db, "matches", id));
+                await deleteDoc(doc(db, "live_matches", id)); // Ensure removed from live matches too
                 fetchMatches();
             } catch (error) {
                 console.error("Error deleting match:", error);
@@ -246,26 +178,17 @@ export default function Matches() {
                 </div>
 
                 <div className="flex flex-col sm:flex-row gap-3 w-full md:w-auto">
-                    <div className="flex gap-2 w-full">
-                        <select
-                            value={selectedLeagueId}
-                            onChange={(e) => setSelectedLeagueId(e.target.value)}
-                            className="bg-slate-800 border border-slate-700 text-white px-4 py-3 rounded-xl outline-none focus:ring-2 focus:ring-blue-500 w-full sm:w-64"
-                        >
-                            <option value="">Select Competition</option>
-                            {competitions.map(comp => (
-                                <option key={comp.id} value={comp.id}>{comp.name} ({comp.country_name})</option>
-                            ))}
-                        </select>
-                        <button
-                            onClick={fetchNextMatch}
-                            disabled={fetchingMatch || !selectedLeagueId}
-                            className="bg-blue-600 hover:bg-blue-500 text-white px-6 py-3 rounded-xl font-medium transition disabled:opacity-50 whitespace-nowrap flex items-center gap-2 shadow-lg shadow-blue-900/20"
-                        >
-                            {fetchingMatch ? <FaSync className="animate-spin" /> : <FaSatelliteDish />}
-                            <span className="hidden sm:inline">Sync Latest Match</span>
-                        </button>
-                    </div>
+                    <button
+                        onClick={() => {
+                            setEditingId(null);
+                            resetForm();
+                            setShowModal(true);
+                        }}
+                        className="bg-blue-600 hover:bg-blue-500 text-white px-6 py-3 rounded-xl font-medium transition whitespace-nowrap flex items-center gap-2 shadow-lg shadow-blue-900/20"
+                    >
+                        <FaPlus />
+                        <span className="hidden sm:inline">Add Match</span>
+                    </button>
                 </div>
             </div>
 

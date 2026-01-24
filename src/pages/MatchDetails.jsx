@@ -72,7 +72,7 @@ export default function MatchDetails() {
     };
 
     const subscribeToActiveUsers = () => {
-        const q = query(collection(db, "matches", id, "activeUsers"), orderBy("lastActive", "desc"), limit(50));
+        const q = query(collection(db, "banter_rooms", id, "activeUsers"), orderBy("lastActive", "desc"), limit(50));
         return onSnapshot(q, (snapshot) => {
             const users = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
             setActiveUsers(users);
@@ -160,8 +160,8 @@ export default function MatchDetails() {
                             key={tab.id}
                             onClick={() => setActiveTab(tab.id)}
                             className={`flex-1 flex items-center justify-center gap-2 py-4 font-medium text-sm transition-all ${activeTab === tab.id
-                                    ? 'bg-slate-800 text-blue-400 border-b-2 border-blue-500'
-                                    : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/50'
+                                ? 'bg-slate-800 text-blue-400 border-b-2 border-blue-500'
+                                : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/50'
                                 }`}
                         >
                             {tab.icon} {tab.label}

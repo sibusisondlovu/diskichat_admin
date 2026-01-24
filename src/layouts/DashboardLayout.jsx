@@ -1,5 +1,5 @@
 import { Outlet, Link, useLocation, useNavigate } from "react-router-dom";
-import { FaFutbol, FaUsers, FaChartLine, FaSignOutAlt, FaBell, FaTrophy } from "react-icons/fa";
+import { FaFutbol, FaUsers, FaChartLine, FaSignOutAlt, FaBell, FaTrophy, FaSatelliteDish } from "react-icons/fa";
 import { signOut } from "firebase/auth";
 import { auth } from "../firebase";
 
@@ -16,9 +16,11 @@ export default function DashboardLayout() {
 
     const navItems = [
         { name: "Live Matches", path: "/", icon: <FaFutbol /> },
+        { name: "Fixtures", path: "/fixtures", icon: <FaSatelliteDish /> },
+        { name: "Teams", path: "/teams", icon: <FaUsers /> }, // Added Teams
         { name: "Competitions", icon: <FaTrophy />, path: "/competitions" },
         { name: "Users", path: "/users", icon: <FaUsers /> },
-        { name: "Push Notifications", path: "/notifications", icon: <FaBell /> },
+        { name: "Notifications", path: "/notifications", icon: <FaBell /> },
         { name: "Analytics", path: "/analytics", icon: <FaChartLine /> },
     ];
 

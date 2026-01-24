@@ -7,8 +7,12 @@ import Matches from "./pages/Matches";
 import MatchDetails from "./pages/MatchDetails";
 import Users from "./pages/Users";
 import UserDetails from "./pages/UserDetails";
+import Fixtures from "./pages/Fixtures";
 import Notifications from "./pages/Notifications";
 import Competitions from "./pages/Competitions";
+
+import Teams from "./pages/Teams";
+import Analytics from "./pages/Analytics";
 
 function App() {
   return (
@@ -19,10 +23,12 @@ function App() {
           <Route path="/" element={<Matches />} />
           <Route path="/match/:id" element={<MatchDetails />} />
           <Route path="/competitions" element={<Competitions />} />
+          <Route path="/teams" element={<Teams />} />
           <Route path="/users" element={<Users />} />
           <Route path="/user/:id" element={<UserDetails />} />
           <Route path="/notifications" element={<Notifications />} />
-          <Route path="/analytics" element={<div className="text-white p-8">Analytics Coming Soon</div>} />
+          <Route path="/fixtures" element={<Fixtures />} />
+          <Route path="/analytics" element={<Analytics />} />
         </Route>
       </Routes>
     </Router>
