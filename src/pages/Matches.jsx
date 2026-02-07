@@ -227,8 +227,8 @@ export default function Matches() {
                                         <div className="text-sm text-slate-500">{match.time}</div>
                                     </td>
                                     <td className="p-5">
-                                        <span className={`px-3 py-1 rounded-full text-xs font-bold border ${match.status === 'Live' ? 'bg-green-500/10 text-green-400 border-green-500/20' :
-                                            match.status === 'Finished' ? 'bg-slate-700/50 text-slate-400 border-slate-600' :
+                                        <span className={`px-3 py-1 rounded-full text-xs font-bold border ${match.status === 'live' ? 'bg-green-500/10 text-green-400 border-green-500/20' :
+                                            match.status === 'finished' ? 'bg-slate-700/50 text-slate-400 border-slate-600' :
                                                 'bg-blue-500/10 text-blue-400 border-blue-500/20'
                                             }`}>
                                             {match.status}
